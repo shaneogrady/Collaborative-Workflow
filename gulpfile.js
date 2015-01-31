@@ -9,10 +9,12 @@ var gulp = require('gulp'),
     minifyHTML = require('gulp-minify-html'),
     jsonminify = require('gulp-jsonminify'),
     imagemin = require('gulp-imagemin');
+    imageResize = require('gulp-image-resize');
     //imageResize = require('gulp-image-resize');
     notify = require('gulp-notify'),
     pngcrush = require('imagemin-pngcrush'),
-    del = require('del')
+    del = require('del'),
+    git = require ('gulp-git'),
     concat = require('gulp-concat');
 
 var env,
@@ -56,7 +58,7 @@ gulp.task('connect', function() {
 /*
 gulp.task('imageResize', function () {
   gulp.src('builds/development/images/socialmedia/*.*')
-    .pipe(imageResize({ 
+    .pipe(imageResize({
       width : 10,
       height : 10,
       crop : true,
@@ -114,12 +116,99 @@ gulp.task('images', function() {
     .pipe(notify({ message: 'Image Conpressed' }))
 });
 
+gulp.task('imageResize', function () {
+  gulp.src('builds/development/images/imageResize/*.*')
+    .pipe(imageResize({
+      width : 900,
+      height : 450,
+      crop : false,
+      upscale : false
+    }))
+    .pipe(gulpif(env === 'production', gulp.dest(outputDir + 'images')))
+    .pipe(connect.reload());
+});
+
+gulp.task('imagelarge', function () {
+  gulp.src('builds/development/images/imageResize/*.*')
+    .pipe(imageResize({
+      width : 900,
+      height : 450,
+      crop : true,
+      upscale : false
+    }))
+    .pipe(gulp.dest('builds/production/images/imageResize/large'));
+});
+
+gulp.task('imagemedium', function () {
+  gulp.src('builds/development/images/imageResize/**/*.*')
+    .pipe(imageResize({
+      width : 640,
+      height : 300,
+      crop : true,
+      upscale : false
+    }))
+    .pipe(gulp.dest('builds/production/images/imageResize/medium'));
+});
+
 gulp.task('json', function() {
   gulp.src('builds/development/js/*.json')
     .pipe(gulpif(env === 'production', jsonminify()))
     .pipe(gulpif(env === 'production', gulp.dest('builds/production/js')))
     .pipe(connect.reload())
 });
+
+gulp.task('add', function(){
+  return gulp.src('.builds/production')
+    .pipe(git.add());
+});
+
+gulp.task('commit', function(){
+  gulp.src('', {buffer:false})
+  .pipe(git.commit('test commit'));
+});
+
+gulp.task('remote', function(){
+  git.addRemote('origin', 'https://github.com/shaneogrady/Workflows.git', function (err) {
+    //if (err) ...
+  });
+});
+
+/*gulp.task('sizer', function () {
+    return gulp.src('fixture.js')
+        .pipe(size())
+        .pipe(gulp.dest('dist'))
+        .pipe(notify({
+            onLast: true,
+            message: function () {
+                return 'Total size ' + s.prettySize;
+            }
+        }));
+});
+ */
+
+/*gulp.task('default', function () {
+    var s = size();
+    return gulp.src('fixture.js')
+        .pipe(s)
+        .pipe(gulp.dest('dist'))
+        .pipe(notify({
+            onLast: true,
+            message: function () {
+                return 'Total size ' + s.prettySize;
+            }
+        }));
+});
+  */
+
+
+/*gulp.task('repo', function() {
+  gulp.src('builds/production')
+  .pipe(git.add())
+  .pipe(git.commit('bump'))
+  .on('end', function(){
+    git.push('origin','master'); // push it up!
+  });
+  */
 
 gulp.task('clean', function(cb) {
     del(['builds/production/css/*.*', 'builds/production/js/*.*', 'builds/production/images/**/*.*'], cb)
@@ -133,5 +222,5 @@ gulp.task('watch', function() {
   gulp.watch('builds/development/js/*.json', ['json']);
   gulp.watch('builds/development/images/**/*.*', ['images']);
 });
- 
+
 gulp.task('default', ['html', 'json', 'coffee', 'js', 'compass', 'images', 'connect', 'watch']);
